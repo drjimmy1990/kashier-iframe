@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Payment</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .summary-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .summary-card h1 {
+            font-size: 24px;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+        .amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #00bcbc;
+            margin-bottom: 30px;
+        }
+        #payment-container button {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="summary-card">
+        <h1>You're about to pay</h1>
+        <div id="amount-display" class="amount"></div>
+        <!-- The Kashier script will generate its button here -->
+        <div id="payment-container"></div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+
+        function loadKashierCheckout(params) {
+            const amountInCents = parseInt(params.get('amount'));
+            const formattedAmount = (amountInCents / 100).toFixed(2);
+            const currencyValue = params.get('currency');
+            
+            document.getElementById('amount-display').textContent = `${formattedAmount} ${currencyValue}`;
+            
+            const kashierScript = document.createElement('script');
+            kashierScript.id = 'kashier-iFrame';
+            kashierScript.src = 'https://payments.kashier.io/kashier-checkout.js';
+            
+            kashierScript.setAttribute('data-merchantId', params.get('merchantId'));
+            kashierScript.setAttribute('data-orderId', params.get('orderId'));
+            kashierScript.setAttribute('data-amount', formattedAmount);
+            kashierScript.setAttribute('data-currency', currencyValue);
+            kashierScript.setAttribute('data-hash', params.get('hash'));
+            kashierScript.setAttribute('data-mode', params.get('mode'));
+            kashierScript.setAttribute('data-type', 'external');
+            kashierScript.setAttribute('data-brandColor', '#00bcbc');
+            kashierScript.setAttribute('data-redirectMethod', 'get');
+            
+            // --- THIS IS THE NEW/IMPORTANT PART ---
+            // Look for the 'display' and 'allowedMethods' parameters in the URL.
+            if (params.get('display')) {
+                kashierScript.setAttribute('data-display', params.get('display'));
+            }
+            if (params.get('allowedMethods')) {
+                kashierScript.setAttribute('data-allowedMethods', params.get('allowedMethods'));
+            }
+            // --- END OF NEW PART ---
+
+            if (params.get('redirectUrl')) {
+                kashierScript.setAttribute('data-merchantRedirect', params.get('redirectUrl'));
+            }
+
+            document.getElementById('payment-container').appendChild(kashierScript);
+        }
+
+        if (urlParams.has('merchantId')) {
+            loadKashierCheckout(urlParams);
+        } else {
+            document.body.innerHTML = '<h1>Error: Payment information not found.</h1>';
+        }
+    </script>
+
+</body>
+</html>
